@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1,
+             maximum-scale=1,
+             user-scalable=no"
+  >
+
+  <title>
+    地方議会活性化シンポジウム2026 受付
+  </title>
+
+
+  <!-- QRコード読取ライブラリ -->
+  <script
+    src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"
+  ></script>
+
+
+  <style>
+
+    html,
+    body {
+      margin: 0;
+      width: 100%;
+      min-height: 100%;
+      background: #111;
+    }
+
+
+    body {
+      font-family:
+        -apple-system,
+        BlinkMacSystemFont,
+        "Helvetica Neue",
+        "Yu Gothic",
+        sans-serif;
+
+      color: #fff;
+    }
+
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      text-align: center;
+      padding: 20px;
+    }
+
+
+    h1 {
+      margin: 5px 0 15px;
+      font-size: 32px;
+    }
+
+
+    .guide {
+      font-size: 25px;
+      font-weight: bold;
+      margin-bottom: 18px;
+    }
+
+
+    #reader {
+      width: 100%;
+      max-width: 720px;
+      margin: 0 auto;
+
+      overflow: hidden;
+
+      border-radius: 16px;
+
+      background: #000;
+    }
+
+
+    #status {
+      margin-top: 20px;
+
+      min-height: 35px;
+
+      font-size: 21px;
+      font-weight: bold;
+    }
+
+
+    #cameraButton {
+      margin-top: 20px;
+
+      padding: 12px 28px;
+
+      font-size: 16px;
+
+      border: none;
+      border-radius: 8px;
+
+      background: #444;
+      color: white;
+    }
+
+  </style>
+
+</head>
+
+
+<body>
+
+
+<div class="container">
+
+  <h1>
+    地方議会活性化シンポジウム2026
+  </h1>
+
+
+  <div class="guide">
+    参加証のQRコードを<br>
+    カメラにかざしてください
+  </div>
+
+
+  <div id="reader"></div>
+
+
+  <div id="status">
+    カメラを起動しています…
+  </div>
+
+
+  <button
+    id="cameraButton"
+    type="button"
+  >
+    カメラ切替
+  </button>
+
+</div>
+
+
+<script>
+
+
+/*
+ * =====================================
+ * Apps Script 本番WebアプリURL
+ *
+ * ★あとで必ず変更します
+ * /exec までを設定
+ * =====================================
+ */
+const RECEPTION_APP_URL =
+  'https://script.google.com/a/macros/omc.co.jp/s/AKfycbwd-TBW3ivL1jwL2KJYliugetqqD6EmM0oSUZ_H5ZkimURYXuR9ADVvO2o7vpDgFF9plA/exec';
+
+
+let scanner = null;
+
+let busy = false;
+
+
+/*
+ * 昨年度と同じように
+ * 参加者側を向くインカメラを初期設定
+ */
+let facingMode =
+  'user';
+
+
+const statusElement =
+  document.getElementById(
+    'status'
+  );
+
+
+/**
+ * QRコードに入っているURLから
+ * 受付トークンを取得
+ */
+function extractReceptionToken(
+  decodedText
+) {
+
+  const text =
+    String(
+      decodedText || ''
+    ).trim();
+
+
+  /*
+   * トークンだけのQRにも対応
+   */
+  if (
+    /^[a-f0-9]{32}$/i.test(
+      text
+    )
+  ) {
+
+    return text;
+  }
+
+
+  /*
+   * 現在の参加証
+   *
+   * /exec?t=受付トークン
+   */
+  try {
+
+    const url =
+      new URL(
+        text
+      );
+
+
+    return (
+      url.searchParams.get(
+        't'
+      ) || ''
+    );
+
+
+  } catch (error) {
+
+    return '';
+  }
+}
+
+
+/**
+ * QRコード読取成功
+ */
+function onScanSuccess(
+  decodedText
+) {
+
+  /*
+   * 同じQRを連続して
+   * 処理しない
+   */
+  if (busy) {
+    return;
+  }
+
+
+  const token =
+    extractReceptionToken(
+      decodedText
+    );
+
+
+  /*
+   * 参加証以外のQR
+   */
+  if (!token) {
+
+    busy =
+      true;
+
+
+    statusElement.textContent =
+      'このQRコードは参加証ではありません。';
+
+
+    setTimeout(
+      function() {
+
+        busy =
+          false;
+
+
+        statusElement.textContent =
+          '参加証のQRコードをかざしてください。';
+
+      },
+      1500
+    );
+
+
+    return;
+  }
+
+
+  busy =
+    true;
+
+
+  statusElement.textContent =
+    '読み取りました。受付処理中です…';
+
+
+  try {
+
+    scanner.pause(
+      true
+    );
+
+  } catch (error) {
+
+    // 何もしない
+  }
+
+
+  /*
+   * QRに入っているURLそのものは使用せず、
+   * トークンだけを取得して、
+   * 現在のApps Script本番URLへ送る。
+   */
+  const targetUrl =
+    RECEPTION_APP_URL +
+    '?t=' +
+    encodeURIComponent(
+      token
+    ) +
+    '&kiosk=1';
+
+
+  window.location.replace(
+    targetUrl
+  );
+}
+
+
+/**
+ * カメラ起動
+ */
+async function startScanner() {
+
+  statusElement.textContent =
+    'カメラを起動しています…';
+
+
+  scanner =
+    new Html5Qrcode(
+      'reader'
+    );
+
+
+  try {
+
+    await scanner.start(
+
+      {
+        facingMode:
+          facingMode
+      },
+
+      {
+        fps: 10,
+
+        qrbox:
+          function(
+            viewWidth,
+            viewHeight
+          ) {
+
+            const size =
+              Math.floor(
+                Math.min(
+                  viewWidth,
+                  viewHeight
+                ) * 0.62
+              );
+
+
+            return {
+              width: size,
+              height: size
+            };
+          }
+      },
+
+      onScanSuccess,
+
+      function() {
+
+        /*
+         * QRが見つからない状態は正常なので、
+         * エラー表示しない
+         */
+
+      }
+
+    );
+
+
+    statusElement.textContent =
+      '参加証のQRコードをかざしてください。';
+
+
+  } catch (error) {
+
+    console.error(
+      error
+    );
+
+
+    statusElement.textContent =
+      'カメラを起動できません。カメラの許可設定を確認してください。';
+  }
+}
+
+
+/**
+ * インカメラ／アウトカメラ切替
+ */
+async function changeCamera() {
+
+  try {
+
+    if (scanner) {
+
+      await scanner.stop();
+
+      await scanner.clear();
+    }
+
+  } catch (error) {
+
+    console.error(
+      error
+    );
+  }
+
+
+  facingMode =
+    facingMode ===
+    'user'
+      ? 'environment'
+      : 'user';
+
+
+  busy =
+    false;
+
+
+  startScanner();
+}
+
+
+/**
+ * 対応端末では画面スリープを防止
+ */
+async function keepScreenAwake() {
+
+  try {
+
+    if (
+      'wakeLock' in navigator
+    ) {
+
+      await navigator
+        .wakeLock
+        .request(
+          'screen'
+        );
+    }
+
+  } catch (error) {
+
+    /*
+     * 非対応端末では何もしない
+     */
+
+  }
+}
+
+
+document
+  .getElementById(
+    'cameraButton'
+  )
+  .addEventListener(
+    'click',
+    changeCamera
+  );
+
+
+window.addEventListener(
+  'load',
+  function() {
+
+    keepScreenAwake();
+
+    startScanner();
+
+  }
+);
+
+
+</script>
+
+</body>
+
+</html>
