@@ -291,7 +291,29 @@
   </div>
 
 <script>
-  document.getElementById('status').textContent = 'JS単体動作OK';
+
+  document.getElementById('status').textContent =
+    'ERROR-MONITOR-1';
+
+  window.onerror = function(
+    message,
+    source,
+    line,
+    column,
+    error
+  ) {
+
+    document.getElementById('status').textContent =
+      'JSエラー：' +
+      message +
+      ' / line ' +
+      line +
+      ' / column ' +
+      column;
+
+    return false;
+  };
+
 </script>
   
   <button
