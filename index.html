@@ -1802,57 +1802,68 @@ bridgeFrame.addEventListener(
   }
 );
 
-window.addEventListener(
-  'load',
-  function() {
+/*
+ * =====================================
+ * Scanner初期化
+ *
+ * scriptはbody末尾にあるため、
+ * window.loadを待たず直接実行する。
+ * Safari対策。
+ * =====================================
+ */
+function initializeScannerPage() {
 
-    keepScreenAwake();
+  keepScreenAwake();
 
-    startScanner();
-
-
-    /*
-     * Apps Script受付コントローラーとの
-     * 接続確認
-     */
-    const params =
-      new URLSearchParams(
-        window.location.search
-      );
+  startScanner();
 
 
-    const channel =
-      params.get(
-        'channel'
-      ) || '';
+  /*
+   * Apps Script受付コントローラーとの
+   * 接続確認
+   */
+  const params =
+    new URLSearchParams(
+      window.location.search
+    );
 
 
-    if (
-      window.opener &&
-      channel
-    ) {
+  const channel =
+    params.get(
+      'channel'
+    ) || '';
 
-      window.opener.postMessage(
 
-        {
-          source:
-            'reception-kiosk-2026',
+  if (
+    window.opener &&
+    channel
+  ) {
 
-          type:
-            'scanner-ready',
+    window.opener.postMessage(
 
-          channel:
-            channel
-        },
+      {
+        source:
+          'reception-kiosk-2026',
 
-        '*'
+        type:
+          'scanner-ready',
 
-      );
-    }
+        channel:
+          channel
+      },
 
+      '*'
+
+    );
   }
-);
+}
 
+
+/*
+ * body末尾なので
+ * DOMはすでに作成済み。
+ */
+initializeScannerPage();
 
 </script>
 
