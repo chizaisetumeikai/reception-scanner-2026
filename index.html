@@ -234,7 +234,7 @@ function extractReceptionToken(
 /**
  * QRコード読取成功
  */
-function onScanSuccess(
+async function onScanSuccess(
   decodedText
 ) {
 
@@ -293,41 +293,49 @@ function onScanSuccess(
     '読み取りました。受付処理中です…';
 
 
+  /*
+   * Apps Scriptへ移動する前に
+   * カメラを完全に停止・解放する。
+   *
+   * iPhone / iPad Safariで
+   * Scannerへ戻った際に
+   * 再度カメラを取得できるようにする。
+   */
   try {
 
-    scanner.pause(
-      true
-    );
-/*
- * Apps Scriptへ移動する前に
- * カメラを完全に解放する。
- *
- * iPhone / iPad Safariで
- * Scannerへ戻った際に
- * カメラを再取得できるようにする。
- */
-try {
+    if (scanner) {
 
-  if (scanner) {
+      await scanner.stop();
 
-    await scanner.stop();
+      scanner.clear();
 
-    await scanner.clear();
+      scanner =
+        null;
+    }
 
-    scanner = null;
-  }
-
-} catch (error) {
-
-  console.error(
-    'カメラ終了処理:',
-    error
-  );
-}
   } catch (error) {
 
-    // 何もしない
+    console.error(
+      'カメラ終了処理:',
+      error
+    );
   }
+
+
+  /*
+   * iPhone / iPad Safariが
+   * カメラを完全に解放するために
+   * 少しだけ待つ
+   */
+  await new Promise(
+    function(resolve) {
+
+      setTimeout(
+        resolve,
+        200
+      );
+    }
+  );
 
 
   /*
@@ -348,7 +356,6 @@ try {
     targetUrl
   );
 }
-
 
 /**
  * カメラ起動
