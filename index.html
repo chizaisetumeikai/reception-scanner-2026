@@ -1120,7 +1120,80 @@ function handlePreviewResult(
   showOverlay();
 }
 
+/**
+ * 本人確認で「いいえ」
+ *
+ * 受付処理は行わず、
+ * 同じカメラ画面へ戻る。
+ */
+function cancelReception() {
 
+  clearBridgeTimeout();
+
+
+  /*
+   * 本人確認画面を閉じる
+   */
+  overlay.style.display =
+    'none';
+
+
+  buttonRow.style.display =
+    'none';
+
+
+  overlayMessage.textContent =
+    '';
+
+
+  /*
+   * 処理中データを破棄
+   */
+  currentToken =
+    '';
+
+
+  pendingMode =
+    '';
+
+
+  /*
+   * QR読み取りを再開
+   */
+  try {
+
+    if (scanner) {
+
+      scanner.resume();
+
+    }
+
+
+    busy =
+      false;
+
+
+    statusElement.textContent =
+      '参加証のQRコードをかざしてください。';
+
+
+  } catch (error) {
+
+    console.error(
+      'Scanner resume:',
+      error
+    );
+
+
+    busy =
+      false;
+
+
+    statusElement.textContent =
+      'カメラの再開に失敗しました。カメラ切替ボタンを押してください。';
+
+  }
+}
 
 /**
  * 受付確定結果
