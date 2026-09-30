@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+  <meta charset="UTF-8">
+  <title>Reception Bridge</title>
+</head>
+
+<body>
+
+<script>
+
+(function() {
+
+  try {
+
+    const params =
+      new URLSearchParams(
+        window.location.hash.slice(1)
+      );
+
+
+    const raw =
+      params.get(
+        'payload'
+      );
+
+
+    if (!raw) {
+      return;
+    }
+
+
+    const payload =
+      JSON.parse(
+        raw
+      );
+
+
+    /*
+     * GitHub Scanner本体へ送信
+     */
+    window.top.postMessage(
+      payload,
+      'https://chizaisetumeikai.github.io'
+    );
+
+
+    /*
+     * iframe構造違いへのフォールバック
+     */
+    if (
+      window.parent !==
+      window.top
+    ) {
+
+      window.parent.postMessage(
+        payload,
+        'https://chizaisetumeikai.github.io'
+      );
+
+    }
+
+  } catch (error) {
+
+    console.error(
+      'Bridge relay error:',
+      error
+    );
+
+  }
+
+})();
+
+</script>
+
+</body>
+
+</html>
