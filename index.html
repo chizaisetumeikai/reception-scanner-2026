@@ -1500,26 +1500,82 @@ async function startScanner() {
 
 
 /**
- * インカメラ／アウトカメラ切替
+ * カメラ画面へ強制復帰
+ *
+ * 処理途中で止まった場合でも、
+ * ユーザー操作でカメラを再起動する。
  */
 async function changeCamera() {
 
   /*
-   * 受付処理中には
-   * 切り替えさせない
+   * 通信待ちタイマーを解除
    */
-  if (busy) {
-    return;
-  }
+  clearBridgeTimeout();
 
 
+  /*
+   * 本人確認・結果画面を閉じる
+   */
+  overlay.style.display =
+    'none';
+
+
+  buttonRow.style.display =
+    'none';
+
+
+  overlayMessage.textContent =
+    '';
+
+
+  currentToken =
+    '';
+
+
+  pendingMode =
+    '';
+
+
+  busy =
+    false;
+
+
+  statusElement.textContent =
+    'カメラを再起動しています…';
+
+
+  /*
+   * いったん現在のScannerを完全終了
+   */
   try {
 
     if (scanner) {
 
-      await scanner.stop();
+      try {
 
-      scanner.clear();
+        await scanner.stop();
+
+      } catch (error) {
+
+        console.log(
+          'scanner.stop:',
+          error
+        );
+      }
+
+
+      try {
+
+        scanner.clear();
+
+      } catch (error) {
+
+        console.log(
+          'scanner.clear:',
+          error
+        );
+      }
+
 
       scanner =
         null;
@@ -1533,18 +1589,18 @@ async function changeCamera() {
   }
 
 
-  facingMode =
-    facingMode ===
-    'user'
-      ? 'environment'
-      : 'user';
+  /*
+   * 少し待ってから
+   * 同じカメラを再起動
+   */
+  window.setTimeout(
+    function() {
 
+      startScanner();
 
-  busy =
-    false;
-
-
-  startScanner();
+    },
+    300
+  );
 }
 
 
