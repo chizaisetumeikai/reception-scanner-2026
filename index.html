@@ -47,12 +47,14 @@
     }
 
 
-    .container {
-      max-width: 900px;
-      margin: 0 auto;
-      text-align: center;
-      padding: 20px;
-    }
+.container {
+  width: 100%;
+  max-width: none;
+  margin: 0 auto;
+  text-align: center;
+  padding: 20px;
+  box-sizing: border-box;
+}
 
 
     h1 {
@@ -68,17 +70,17 @@
     }
 
 
-    #reader {
-      width: 100%;
-      max-width: 720px;
-      margin: 0 auto;
+#reader {
+  width: 100%;
+  max-width: none;
+  margin: 0 auto;
 
-      overflow: hidden;
+  overflow: hidden;
 
-      border-radius: 16px;
+  border-radius: 16px;
 
-      background: #000;
-    }
+  background: #000;
+}
 
 
     #status {
@@ -1440,9 +1442,34 @@ async function startScanner() {
           facingMode
       },
 
-　{
-  fps: 10
-　},
+{
+  fps: 10,
+
+  /*
+   * QR読み取り枠を
+   * カメラ画面の短辺の92%まで広げる
+   */
+  qrbox:
+    function(
+      viewWidth,
+      viewHeight
+    ) {
+
+      const size =
+        Math.floor(
+          Math.min(
+            viewWidth,
+            viewHeight
+          ) * 0.92
+        );
+
+
+      return {
+        width: size,
+        height: size
+      };
+    }
+},
 
       onScanSuccess,
 
