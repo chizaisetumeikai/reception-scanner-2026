@@ -1839,21 +1839,6 @@ window.addEventListener(
   receiveBridgeMessage
 );
 
-bridgeFrame.addEventListener(
-  'load',
-  function() {
-
-    if (
-      pendingMode ===
-      'preview'
-    ) {
-
-      statusElement.textContent =
-        'Bridge iframe 読み込み完了';
-    }
-
-  }
-);
 
 /*
  * =====================================
