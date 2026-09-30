@@ -1507,14 +1507,23 @@ async function startScanner() {
  */
 async function changeCamera() {
 
+/**
+ * インカメラ／アウトカメラ切替
+ *
+ * 処理途中で止まった場合でも
+ * 強制的に状態をリセットして
+ * カメラを切り替える。
+ */
+async function changeCamera() {
+
   /*
-   * 通信待ちタイマーを解除
+   * 通信待ちを解除
    */
   clearBridgeTimeout();
 
 
   /*
-   * 本人確認・結果画面を閉じる
+   * 本人確認画面などを閉じる
    */
   overlay.style.display =
     'none';
@@ -1536,31 +1545,58 @@ async function changeCamera() {
     '';
 
 
+  /*
+   * 次に使うカメラ
+   */
+  facingMode =
+    facingMode ===
+    'user'
+      ? 'environment'
+      : 'user';
+
+
   busy =
-    false;
+    true;
 
 
   statusElement.textContent =
-    'カメラを再起動しています…';
+    'カメラを切り替えています…';
 
 
   /*
-   * いったん現在のScannerを完全終了
+   * 現在のScannerを終了
    */
   try {
 
     if (scanner) {
 
+      /*
+       * pause中の場合でも
+       * stopできるよう試行
+       */
       try {
 
         await scanner.stop();
 
       } catch (error) {
 
-        console.log(
-          'scanner.stop:',
-          error
-        );
+        /*
+         * pause状態などでstopに失敗したら
+         * 一度resumeしてから再度stop
+         */
+        try {
+
+          scanner.resume();
+
+          await scanner.stop();
+
+        } catch (secondError) {
+
+          console.log(
+            'Scanner stop:',
+            secondError
+          );
+        }
       }
 
 
@@ -1571,7 +1607,7 @@ async function changeCamera() {
       } catch (error) {
 
         console.log(
-          'scanner.clear:',
+          'Scanner clear:',
           error
         );
       }
@@ -1590,99 +1626,26 @@ async function changeCamera() {
 
 
   /*
-   * 少し待ってから
-   * 同じカメラを再起動
+   * iPhone / iPadが
+   * カメラを解放する時間を確保
    */
-  window.setTimeout(
-    function() {
+  await new Promise(
+    function(resolve) {
 
-      startScanner();
-
-    },
-    300
-  );
-}
-
-
-
-/**
- * 対応端末では
- * 画面スリープを防止
- */
-async function keepScreenAwake() {
-
-  try {
-
-    if (
-      'wakeLock' in navigator
-    ) {
-
-      await navigator
-        .wakeLock
-        .request(
-          'screen'
-        );
+      window.setTimeout(
+        resolve,
+        300
+      );
     }
-
-  } catch (error) {
-
-    /*
-     * 非対応端末では
-     * 何もしない
-     */
-  }
-}
-
-
-
-/*
- * =====================================
- * イベント登録
- * =====================================
- */
-
-yesButton.addEventListener(
-  'click',
-  confirmReception
-);
-
-
-noButton.addEventListener(
-  'click',
-  cancelReception
-);
-
-
-document
-  .getElementById(
-    'cameraButton'
-  )
-  .addEventListener(
-    'click',
-    changeCamera
   );
 
 
-window.addEventListener(
-  'message',
-  receiveBridgeMessage
-);
+  busy =
+    false;
 
 
-window.addEventListener(
-  'load',
-  function() {
-
-    keepScreenAwake();
-
-    startScanner();
-
-  }
-);
-
-
-</script>
-
-</body>
-
-</html>
+  /*
+   * 反対側のカメラを起動
+   */
+  startScanner();
+}
