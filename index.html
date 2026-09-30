@@ -817,9 +817,53 @@ const allowedOrigin =
     return;
   }
 
+  /*
+ * このScannerを開いた
+ * 受付コントローラー以外からの
+ * メッセージは受け付けない
+ */
+if (
+  !window.opener ||
+  event.source !== window.opener
+) {
 
-  const data =
-    event.data;
+  return;
+}
+
+
+/*
+ * Scanner起動時に発行された
+ * channelを取得
+ */
+const params =
+  new URLSearchParams(
+    window.location.search
+  );
+
+
+const expectedChannel =
+  params.get(
+    'channel'
+  ) || '';
+
+
+const data =
+  event.data;
+
+
+/*
+ * channelがない場合、
+ * または今回のchannelと一致しない場合は
+ * 受け付けない
+ */
+if (
+  !expectedChannel ||
+  !data ||
+  data.channel !== expectedChannel
+) {
+
+  return;
+}
 
 
   if (
