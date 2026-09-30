@@ -1442,27 +1442,6 @@ async function startScanner() {
 
       {
         fps: 10,
-
-        qrbox:
-          function(
-            viewWidth,
-            viewHeight
-          ) {
-
-            const size =
-              Math.floor(
-                Math.min(
-                  viewWidth,
-                  viewHeight
-                ) * 0.8
-              );
-
-
-            return {
-              width: size,
-              height: size
-            };
-          }
       },
 
       onScanSuccess,
