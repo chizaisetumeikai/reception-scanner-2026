@@ -286,35 +286,9 @@
   <div id="reader"></div>
 
 
-  <div id="status">
-    BUILD-1606 / JS未開始
-  </div>
-
-<script>
-
-  document.getElementById('status').textContent =
-    'ERROR-MONITOR-1';
-
-  window.onerror = function(
-    message,
-    source,
-    line,
-    column,
-    error
-  ) {
-
-    document.getElementById('status').textContent =
-      'JSエラー：' +
-      message +
-      ' / line ' +
-      line +
-      ' / column ' +
-      column;
-
-    return false;
-  };
-
-</script>
+<div id="status">
+  カメラを起動しています…
+</div>
   
   <button
     id="cameraButton"
@@ -426,7 +400,6 @@
 
 
 <script>
-document.getElementById('status').textContent = 'MAINスクリプト開始';
 
 /*
  * =====================================
@@ -1961,7 +1934,6 @@ function initializeScannerPage() {
  * body末尾なので
  * DOMはすでに作成済み。
  */
-document.getElementById('status').textContent = 'MAIN末尾到達';
 initializeScannerPage();
 
 </script>
