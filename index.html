@@ -7,7 +7,8 @@
 
   <meta
     name="viewport"
-    content="width=device-width, initial-scale=1,
+    content="width=device-width,
+             initial-scale=1,
              maximum-scale=1,
              user-scalable=no"
   >
@@ -104,6 +105,161 @@
       color: white;
     }
 
+
+    /*
+     * =====================================
+     * 本人確認・受付完了オーバーレイ
+     * =====================================
+     */
+    #overlay {
+      display: none;
+
+      position: fixed;
+      inset: 0;
+
+      z-index: 1000;
+
+      background: #f4f5f7;
+
+      color: #111;
+
+      align-items: center;
+      justify-content: center;
+
+      padding: 20px;
+
+      box-sizing: border-box;
+    }
+
+
+    .overlayCard {
+      box-sizing: border-box;
+
+      width: 92%;
+      max-width: 720px;
+
+      background: #fff;
+
+      border-radius: 22px;
+
+      padding: 45px 35px;
+
+      text-align: center;
+
+      box-shadow:
+        0 5px 25px
+        rgba(0, 0, 0, 0.15);
+    }
+
+
+    #overlayTitle {
+      font-size: 36px;
+      font-weight: bold;
+      line-height: 1.5;
+
+      margin-bottom: 32px;
+    }
+
+
+    #participantOrganization {
+      font-size: 24px;
+
+      margin-bottom: 12px;
+    }
+
+
+    #participantName {
+      font-size: 36px;
+      font-weight: bold;
+
+      margin-bottom: 30px;
+    }
+
+
+    .seatLabel {
+      font-size: 21px;
+
+      margin-bottom: 5px;
+    }
+
+
+    #participantSeat {
+      font-size: 54px;
+      font-weight: bold;
+
+      margin-bottom: 35px;
+    }
+
+
+    #buttonRow {
+      display: none;
+
+      width: 100%;
+
+      gap: 16px;
+    }
+
+
+    #yesButton,
+    #noButton {
+      flex: 1;
+
+      padding: 22px 10px;
+
+      border: none;
+      border-radius: 12px;
+
+      font-size: 28px;
+      font-weight: bold;
+
+      cursor: pointer;
+    }
+
+
+    /*
+     * 左：はい
+     */
+    #yesButton {
+      background: #1976d2;
+      color: #fff;
+    }
+
+
+    /*
+     * 右：いいえ
+     */
+    #noButton {
+      background: #e5e7eb;
+      color: #222;
+    }
+
+
+    #yesButton:disabled,
+    #noButton:disabled {
+      opacity: 0.55;
+    }
+
+
+    #overlayMessage {
+      min-height: 28px;
+
+      margin-top: 18px;
+
+      font-size: 19px;
+      font-weight: bold;
+    }
+
+
+    /*
+     * Apps Scriptとの裏側通信用
+     *
+     * 画面には一切表示しない
+     */
+    #bridgeFrame,
+    #bridgeForm {
+      display: none;
+    }
+
   </style>
 
 </head>
@@ -143,32 +299,164 @@
 </div>
 
 
+
+<!--
+  本人確認・受付結果
+-->
+<div id="overlay">
+
+  <div class="overlayCard">
+
+    <div id="overlayTitle">
+    </div>
+
+
+    <div id="participantOrganization">
+    </div>
+
+
+    <div id="participantName">
+    </div>
+
+
+    <div class="seatLabel">
+      座席番号
+    </div>
+
+
+    <div id="participantSeat">
+    </div>
+
+
+    <div id="buttonRow">
+
+      <!-- 左：はい -->
+      <button
+        id="yesButton"
+        type="button"
+      >
+        はい
+      </button>
+
+
+      <!-- 右：いいえ -->
+      <button
+        id="noButton"
+        type="button"
+      >
+        いいえ
+      </button>
+
+    </div>
+
+
+    <div id="overlayMessage">
+    </div>
+
+  </div>
+
+</div>
+
+
+
+<!--
+  Apps Scriptとの通信専用iframe
+-->
+<iframe
+  id="bridgeFrame"
+  name="kioskBridgeFrame"
+  src="about:blank"
+></iframe>
+
+
+
+<!--
+  受付確定POST専用
+-->
+<form
+  id="bridgeForm"
+  method="post"
+  target="kioskBridgeFrame"
+>
+
+  <input
+    id="bridgeAction"
+    name="action"
+    type="hidden"
+    value="checkin"
+  >
+
+
+  <input
+    id="bridgeToken"
+    name="t"
+    type="hidden"
+    value=""
+  >
+
+</form>
+
+
+
 <script>
 
 
 /*
  * =====================================
- * Apps Script 本番WebアプリURL
+ * GitHub Scanner専用
+ * Apps Script公開Bridge URL
  *
- * ★あとで必ず変更します
- * /exec までを設定
+ * ★重要
+ *
+ * 「全員」で公開した
+ * 新しいWebアプリの
+ * /exec URLを設定してください。
+ *
+ * OMC限定WebアプリURLではありません。
+ * /dev でもありません。
  * =====================================
  */
-const RECEPTION_APP_URL =
-  'https://script.google.com/a/macros/omc.co.jp/s/AKfycbwd-TBW3ivL1jwL2KJYliugetqqD6EmM0oSUZ_H5ZkimURYXuR9ADVvO2o7vpDgFF9plA/exec';
+const KIOSK_BRIDGE_URL =
+  'https://script.google.com/macros/s/AKfycbzmxnS1vopIwV5FkjDcMN_QhjGm2zM0JBUTWqmZu1vgmTx6s1hjgEv6LREjD9WhYTnJaQ/exec';
 
 
-let scanner = null;
 
-let busy = false;
+let scanner =
+  null;
+
+
+let busy =
+  false;
 
 
 /*
- * 昨年度と同じように
- * 参加者側を向くインカメラを初期設定
+ * 現在処理中の参加者
+ */
+let currentToken =
+  '';
+
+
+/*
+ * preview / checkin
+ */
+let pendingMode =
+  '';
+
+
+/*
+ * 通信タイムアウト
+ */
+let bridgeTimeoutId =
+  null;
+
+
+/*
+ * 参加者側を向く
+ * インカメラから開始
  */
 let facingMode =
   'user';
+
 
 
 const statusElement =
@@ -177,9 +465,82 @@ const statusElement =
   );
 
 
+const overlay =
+  document.getElementById(
+    'overlay'
+  );
+
+
+const overlayTitle =
+  document.getElementById(
+    'overlayTitle'
+  );
+
+
+const participantOrganization =
+  document.getElementById(
+    'participantOrganization'
+  );
+
+
+const participantName =
+  document.getElementById(
+    'participantName'
+  );
+
+
+const participantSeat =
+  document.getElementById(
+    'participantSeat'
+  );
+
+
+const buttonRow =
+  document.getElementById(
+    'buttonRow'
+  );
+
+
+const yesButton =
+  document.getElementById(
+    'yesButton'
+  );
+
+
+const noButton =
+  document.getElementById(
+    'noButton'
+  );
+
+
+const overlayMessage =
+  document.getElementById(
+    'overlayMessage'
+  );
+
+
+const bridgeFrame =
+  document.getElementById(
+    'bridgeFrame'
+  );
+
+
+const bridgeForm =
+  document.getElementById(
+    'bridgeForm'
+  );
+
+
+const bridgeToken =
+  document.getElementById(
+    'bridgeToken'
+  );
+
+
+
 /**
- * QRコードに入っているURLから
- * 受付トークンを取得
+ * QRコードから
+ * 受付トークンだけ取得
  */
 function extractReceptionToken(
   decodedText
@@ -192,7 +553,7 @@ function extractReceptionToken(
 
 
   /*
-   * トークンだけのQRにも対応
+   * 32桁トークンそのもの
    */
   if (
     /^[a-f0-9]{32}$/i.test(
@@ -205,9 +566,9 @@ function extractReceptionToken(
 
 
   /*
-   * 現在の参加証
+   * URL型QR
    *
-   * /exec?t=受付トークン
+   * ?t=受付トークン
    */
   try {
 
@@ -217,11 +578,23 @@ function extractReceptionToken(
       );
 
 
-    return (
+    const token =
       url.searchParams.get(
         't'
-      ) || ''
-    );
+      ) || '';
+
+
+    if (
+      /^[a-f0-9]{32}$/i.test(
+        token
+      )
+    ) {
+
+      return token;
+    }
+
+
+    return '';
 
 
   } catch (error) {
@@ -231,16 +604,17 @@ function extractReceptionToken(
 }
 
 
+
 /**
  * QRコード読取成功
  */
-async function onScanSuccess(
+function onScanSuccess(
   decodedText
 ) {
 
   /*
-   * 同じQRを連続して
-   * 処理しない
+   * 1人処理中は
+   * 次のQRを読まない
    */
   if (busy) {
     return;
@@ -254,7 +628,7 @@ async function onScanSuccess(
 
 
   /*
-   * 参加証以外のQR
+   * 参加証ではないQR
    */
   if (!token) {
 
@@ -266,7 +640,7 @@ async function onScanSuccess(
       'このQRコードは参加証ではありません。';
 
 
-    setTimeout(
+    window.setTimeout(
       function() {
 
         busy =
@@ -285,77 +659,762 @@ async function onScanSuccess(
   }
 
 
+  /*
+   * ここから参加者1人分の処理開始
+   */
   busy =
     true;
 
 
+  currentToken =
+    token;
+
+
   statusElement.textContent =
-    '読み取りました。受付処理中です…';
+    '読み取りました。参加者情報を確認しています…';
 
 
   /*
-   * Apps Scriptへ移動する前に
-   * カメラを完全に停止・解放する。
+   * カメラそのものは停止しない。
    *
-   * iPhone / iPad Safariで
-   * Scannerへ戻った際に
-   * 再度カメラを取得できるようにする。
+   * QR解析だけ一時停止する。
    */
   try {
 
     if (scanner) {
 
-      await scanner.stop();
-
-      scanner.clear();
-
-      scanner =
-        null;
+      scanner.pause(
+        true
+      );
     }
 
   } catch (error) {
 
     console.error(
-      'カメラ終了処理:',
+      'Scanner pause:',
       error
     );
   }
 
 
   /*
-   * iPhone / iPad Safariが
-   * カメラを完全に解放するために
-   * 少しだけ待つ
+   * Apps Scriptから
+   * 氏名・所属・座席番号等を取得
    */
-  await new Promise(
-    function(resolve) {
+  requestParticipantPreview(
+    token
+  );
+}
 
-      setTimeout(
-        resolve,
-        200
-      );
-    }
+
+
+/**
+ * 参加者情報取得
+ */
+function requestParticipantPreview(
+  token
+) {
+
+  pendingMode =
+    'preview';
+
+
+  startBridgeTimeout(
+    '参加者情報の取得に時間がかかっています。'
   );
 
 
-  /*
-   * QRに入っているURLそのものは使用せず、
-   * トークンだけを取得して、
-   * 現在のApps Script本番URLへ送る。
-   */
-  const targetUrl =
-    RECEPTION_APP_URL +
-    '?t=' +
+  const url =
+    KIOSK_BRIDGE_URL +
+    '?bridge=preview' +
+    '&t=' +
     encodeURIComponent(
       token
     ) +
-    '&kiosk=1';
+    '&_=' +
+    Date.now();
 
 
-  window.location.replace(
-    targetUrl
+  bridgeFrame.src =
+    url;
+}
+
+
+
+/**
+ * 「はい」
+ *
+ * ここで初めて
+ * Apps Scriptへ受付確定を送る
+ */
+function confirmReception() {
+
+  if (
+    pendingMode === 'checkin'
+  ) {
+
+    return;
+  }
+
+
+  pendingMode =
+    'checkin';
+
+
+  yesButton.disabled =
+    true;
+
+
+  noButton.disabled =
+    true;
+
+
+  yesButton.textContent =
+    '受付処理中…';
+
+
+  overlayMessage.textContent =
+    '受付処理を行っています。';
+
+
+  startBridgeTimeout(
+    '受付処理に時間がかかっています。'
+  );
+
+
+  bridgeToken.value =
+    currentToken;
+
+
+  /*
+   * POST先
+   */
+  bridgeForm.action =
+    KIOSK_BRIDGE_URL +
+    '?_=' +
+    Date.now();
+
+
+  /*
+   * 非表示iframeへPOST
+   *
+   * GitHub画面自体は
+   * 一切移動しない
+   */
+  bridgeForm.submit();
+}
+
+
+
+/**
+ * 「いいえ」
+ *
+ * 受付処理は行わない
+ */
+function cancelReception() {
+
+  if (
+    pendingMode === 'checkin'
+  ) {
+
+    return;
+  }
+
+
+  yesButton.disabled =
+    true;
+
+
+  noButton.disabled =
+    true;
+
+
+  overlayMessage.textContent =
+    '読み取り画面へ戻ります…';
+
+
+  window.setTimeout(
+    function() {
+
+      resumeScanner();
+
+    },
+    300
   );
 }
+
+
+
+/**
+ * Apps Scriptから
+ * postMessageで返ってきた結果
+ */
+function receiveBridgeMessage(
+  event
+) {
+
+  /*
+   * Apps Script HTML Serviceは
+   * googleusercontent.com側から
+   * 実行される場合がある。
+   */
+  const allowedOrigin =
+    event.origin ===
+      'https://script.google.com' ||
+
+    event.origin ===
+      'https://script.googleusercontent.com' ||
+
+    /^https:\/\/[^/]+\.googleusercontent\.com$/i
+      .test(
+        event.origin
+      );
+
+
+  if (!allowedOrigin) {
+
+    return;
+  }
+
+
+  const data =
+    event.data;
+
+
+  if (
+    !data ||
+    data.source !==
+      'reception-kiosk-2026'
+  ) {
+
+    return;
+  }
+
+
+  /*
+   * 古い応答等を無視
+   */
+  if (
+    data.type !==
+    pendingMode
+  ) {
+
+    return;
+  }
+
+
+  clearBridgeTimeout();
+
+
+  const result =
+    data.result || {
+      ok: false,
+      message:
+        '処理結果を取得できませんでした。'
+    };
+
+
+  /*
+   * =====================================
+   * 参加者情報取得結果
+   * =====================================
+   */
+  if (
+    data.type ===
+    'preview'
+  ) {
+
+    handlePreviewResult(
+      result
+    );
+
+
+    return;
+  }
+
+
+  /*
+   * =====================================
+   * 受付確定結果
+   * =====================================
+   */
+  if (
+    data.type ===
+    'checkin'
+  ) {
+
+    handleCheckInResult(
+      result
+    );
+  }
+}
+
+
+
+/**
+ * 参加者情報取得後
+ */
+function handlePreviewResult(
+  result
+) {
+
+  pendingMode =
+    '';
+
+
+  /*
+   * 無効なQRなど
+   */
+  if (
+    !result ||
+    !result.ok
+  ) {
+
+    showTemporaryMessage(
+      result &&
+      result.message
+        ? result.message
+        : '参加者情報を取得できませんでした。',
+      3500
+    );
+
+
+    return;
+  }
+
+
+  /*
+   * 既に受付済み
+   */
+  if (
+    result.alreadyChecked
+  ) {
+
+    showParticipantResult(
+      '既に受付しております',
+      result,
+      false
+    );
+
+
+    window.setTimeout(
+      function() {
+
+        resumeScanner();
+
+      },
+      3000
+    );
+
+
+    return;
+  }
+
+
+  /*
+   * 本人確認
+   */
+  overlayTitle.textContent =
+    'こちらでお間違いないですか？';
+
+
+  participantOrganization.textContent =
+    result.organization || '';
+
+
+  participantName.textContent =
+    (result.name || '') +
+    ' 様';
+
+
+  participantSeat.textContent =
+    result.seat || '';
+
+
+  overlayMessage.textContent =
+    '';
+
+
+  yesButton.textContent =
+    'はい';
+
+
+  yesButton.disabled =
+    false;
+
+
+  noButton.disabled =
+    false;
+
+
+  buttonRow.style.display =
+    'flex';
+
+
+  showOverlay();
+}
+
+
+
+/**
+ * 受付確定結果
+ */
+function handleCheckInResult(
+  result
+) {
+
+  pendingMode =
+    '';
+
+
+  /*
+   * 通信自体は成功したが
+   * 受付処理が失敗
+   */
+  if (
+    !result ||
+    !result.ok
+  ) {
+
+    showTemporaryMessage(
+      result &&
+      result.message
+        ? result.message
+        : '受付処理に失敗しました。',
+      4000
+    );
+
+
+    return;
+  }
+
+
+  /*
+   * 本人確認中に
+   * 他端末で受付済みになった場合
+   */
+  if (
+    result.duplicate
+  ) {
+
+    showParticipantResult(
+      '既に受付しております',
+      result,
+      false
+    );
+
+
+    window.setTimeout(
+      function() {
+
+        resumeScanner();
+
+      },
+      3000
+    );
+
+
+    return;
+  }
+
+
+  /*
+   * =====================================
+   * 初回受付成功
+   *
+   * 5秒間表示
+   * =====================================
+   */
+  const seat =
+    result.seat || '';
+
+
+  overlayTitle.innerHTML =
+    '受付が完了しました。<br>' +
+    seat +
+    'へお座りください';
+
+
+  participantOrganization.textContent =
+    result.organization || '';
+
+
+  participantName.textContent =
+    (result.name || '') +
+    ' 様';
+
+
+  participantSeat.textContent =
+    seat;
+
+
+  buttonRow.style.display =
+    'none';
+
+
+  overlayMessage.textContent =
+    '';
+
+
+  showOverlay();
+
+
+  /*
+   * 高齢の参加者にも
+   * 確認しやすいよう5秒
+   */
+  window.setTimeout(
+    function() {
+
+      resumeScanner();
+
+    },
+    5000
+  );
+}
+
+
+
+/**
+ * 参加者付き結果画面
+ */
+function showParticipantResult(
+  title,
+  result,
+  showButtons
+) {
+
+  overlayTitle.textContent =
+    title;
+
+
+  participantOrganization.textContent =
+    result.organization || '';
+
+
+  participantName.textContent =
+    (result.name || '') +
+    ' 様';
+
+
+  participantSeat.textContent =
+    result.seat || '';
+
+
+  buttonRow.style.display =
+    showButtons
+      ? 'flex'
+      : 'none';
+
+
+  overlayMessage.textContent =
+    '';
+
+
+  showOverlay();
+}
+
+
+
+/**
+ * エラー等を一定時間表示
+ */
+function showTemporaryMessage(
+  message,
+  delay
+) {
+
+  pendingMode =
+    '';
+
+
+  overlayTitle.textContent =
+    message;
+
+
+  participantOrganization.textContent =
+    '';
+
+
+  participantName.textContent =
+    '';
+
+
+  participantSeat.textContent =
+    '';
+
+
+  buttonRow.style.display =
+    'none';
+
+
+  overlayMessage.textContent =
+    '読み取り画面へ戻ります';
+
+
+  showOverlay();
+
+
+  window.setTimeout(
+    function() {
+
+      resumeScanner();
+
+    },
+    delay
+  );
+}
+
+
+
+/**
+ * オーバーレイ表示
+ */
+function showOverlay() {
+
+  overlay.style.display =
+    'flex';
+}
+
+
+
+/**
+ * Scannerへ復帰
+ *
+ * ページ遷移はしない。
+ * カメラも取り直さない。
+ */
+function resumeScanner() {
+
+  clearBridgeTimeout();
+
+
+  overlay.style.display =
+    'none';
+
+
+  buttonRow.style.display =
+    'none';
+
+
+  overlayMessage.textContent =
+    '';
+
+
+  yesButton.textContent =
+    'はい';
+
+
+  yesButton.disabled =
+    false;
+
+
+  noButton.disabled =
+    false;
+
+
+  currentToken =
+    '';
+
+
+  pendingMode =
+    '';
+
+
+  /*
+   * 同じカメラストリームを
+   * そのまま再開
+   */
+  try {
+
+    if (scanner) {
+
+      scanner.resume();
+    }
+
+
+    busy =
+      false;
+
+
+    statusElement.textContent =
+      '参加証のQRコードをかざしてください。';
+
+
+  } catch (error) {
+
+    console.error(
+      'Scanner resume:',
+      error
+    );
+
+
+    busy =
+      false;
+
+
+    statusElement.textContent =
+      'カメラの再開に失敗しました。カメラ切替ボタンを押してください。';
+  }
+}
+
+
+
+/**
+ * Apps Script応答待ち
+ * タイムアウト
+ */
+function startBridgeTimeout(
+  message
+) {
+
+  clearBridgeTimeout();
+
+
+  bridgeTimeoutId =
+    window.setTimeout(
+      function() {
+
+        bridgeTimeoutId =
+          null;
+
+
+        pendingMode =
+          '';
+
+
+        showTemporaryMessage(
+          message,
+          3500
+        );
+
+      },
+      12000
+    );
+}
+
+
+
+/**
+ * タイムアウト解除
+ */
+function clearBridgeTimeout() {
+
+  if (
+    bridgeTimeoutId !== null
+  ) {
+
+    window.clearTimeout(
+      bridgeTimeoutId
+    );
+
+
+    bridgeTimeoutId =
+      null;
+  }
+}
+
+
 
 /**
  * カメラ起動
@@ -411,13 +1470,15 @@ async function startScanner() {
       function() {
 
         /*
-         * QRが見つからない状態は正常なので、
-         * エラー表示しない
+         * QRが見つからない状態は正常
          */
-
       }
 
     );
+
+
+    busy =
+      false;
 
 
     statusElement.textContent =
@@ -437,10 +1498,20 @@ async function startScanner() {
 }
 
 
+
 /**
  * インカメラ／アウトカメラ切替
  */
 async function changeCamera() {
+
+  /*
+   * 受付処理中には
+   * 切り替えさせない
+   */
+  if (busy) {
+    return;
+  }
+
 
   try {
 
@@ -448,7 +1519,10 @@ async function changeCamera() {
 
       await scanner.stop();
 
-      await scanner.clear();
+      scanner.clear();
+
+      scanner =
+        null;
     }
 
   } catch (error) {
@@ -474,8 +1548,10 @@ async function changeCamera() {
 }
 
 
+
 /**
- * 対応端末では画面スリープを防止
+ * 対応端末では
+ * 画面スリープを防止
  */
 async function keepScreenAwake() {
 
@@ -495,11 +1571,30 @@ async function keepScreenAwake() {
   } catch (error) {
 
     /*
-     * 非対応端末では何もしない
+     * 非対応端末では
+     * 何もしない
      */
-
   }
 }
+
+
+
+/*
+ * =====================================
+ * イベント登録
+ * =====================================
+ */
+
+yesButton.addEventListener(
+  'click',
+  confirmReception
+);
+
+
+noButton.addEventListener(
+  'click',
+  cancelReception
+);
 
 
 document
@@ -510,6 +1605,12 @@ document
     'click',
     changeCamera
   );
+
+
+window.addEventListener(
+  'message',
+  receiveBridgeMessage
+);
 
 
 window.addEventListener(
