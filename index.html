@@ -298,7 +298,32 @@ function onScanSuccess(
     scanner.pause(
       true
     );
+/*
+ * Apps Scriptへ移動する前に
+ * カメラを完全に解放する。
+ *
+ * iPhone / iPad Safariで
+ * Scannerへ戻った際に
+ * カメラを再取得できるようにする。
+ */
+try {
 
+  if (scanner) {
+
+    await scanner.stop();
+
+    await scanner.clear();
+
+    scanner = null;
+  }
+
+} catch (error) {
+
+  console.error(
+    'カメラ終了処理:',
+    error
+  );
+}
   } catch (error) {
 
     // 何もしない
