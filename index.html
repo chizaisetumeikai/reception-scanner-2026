@@ -708,47 +708,9 @@ function onScanSuccess(
   );
 }
 
-/**
- * Apps Script JSONPから
- * 参加者情報を受信
- */
-function receptionPreviewCallback(
-  data
-) {
-
-  if (
-    !data ||
-    data.source !==
-      'reception-kiosk-2026' ||
-    data.type !==
-      'preview'
-  ) {
-
-    return;
-  }
-
-
-  clearBridgeTimeout();
-
-
-  const result =
-    data.result || {
-
-      ok: false,
-
-      message:
-        '処理結果を取得できませんでした。'
-
-    };
-
-
-  handlePreviewResult(
-    result
-  );
-}
-
-/**
- * 参加者情報取得
+  /**
+ * OMC認証済み受付コントローラーへ
+ * 参加者情報取得を依頼
  */
 function requestParticipantPreview(
   token
@@ -763,21 +725,56 @@ function requestParticipantPreview(
   );
 
 
-  /*
-   * 前回のJSONP scriptがあれば削除
-   */
-  const oldScript =
-    document.getElementById(
-      'previewJsonpScript'
+  const params =
+    new URLSearchParams(
+      window.location.search
     );
 
 
-  if (oldScript) {
+  const channel =
+    params.get(
+      'channel'
+    ) || '';
 
-    oldScript.remove();
 
+  if (
+    !window.opener ||
+    !channel
+  ) {
+
+    clearBridgeTimeout();
+
+
+    showTemporaryMessage(
+      '受付コントローラーとの接続がありません。',
+      3500
+    );
+
+
+    return;
   }
 
+
+  window.opener.postMessage(
+
+    {
+      source:
+        'reception-kiosk-2026',
+
+      type:
+        'preview-request',
+
+      channel:
+        channel,
+
+      token:
+        token
+    },
+
+    '*'
+
+  );
+}
 
   /*
    * Apps Scriptを
@@ -832,16 +829,11 @@ function requestParticipantPreview(
 }
 
 
-/**
- * 「はい」
- *
- * ここで初めて
- * Apps Scriptへ受付確定を送る
- */
 function confirmReception() {
 
   if (
-    pendingMode === 'checkin'
+    pendingMode ===
+      'checkin'
   ) {
 
     return;
@@ -873,67 +865,56 @@ function confirmReception() {
   );
 
 
-  bridgeToken.value =
-    currentToken;
+  const params =
+    new URLSearchParams(
+      window.location.search
+    );
 
 
-  /*
-   * POST先
-   */
-  bridgeForm.action =
-    KIOSK_BRIDGE_URL +
-    '?_=' +
-    Date.now();
+  const channel =
+    params.get(
+      'channel'
+    ) || '';
 
-
-  /*
-   * 非表示iframeへPOST
-   *
-   * GitHub画面自体は
-   * 一切移動しない
-   */
-  bridgeForm.submit();
-}
-
-
-
-/**
- * 「いいえ」
- *
- * 受付処理は行わない
- */
-function cancelReception() {
 
   if (
-    pendingMode === 'checkin'
+    !window.opener ||
+    !channel
   ) {
+
+    clearBridgeTimeout();
+
+
+    showTemporaryMessage(
+      '受付コントローラーとの接続がありません。',
+      3500
+    );
+
 
     return;
   }
 
 
-  yesButton.disabled =
-    true;
+  window.opener.postMessage(
 
+    {
+      source:
+        'reception-kiosk-2026',
 
-  noButton.disabled =
-    true;
+      type:
+        'checkin-request',
 
+      channel:
+        channel,
 
-  overlayMessage.textContent =
-    '読み取り画面へ戻ります…';
-
-
-  window.setTimeout(
-    function() {
-
-      resumeScanner();
-
+      token:
+        currentToken
     },
-    300
+
+    '*'
+
   );
 }
-
 
 
 /**
