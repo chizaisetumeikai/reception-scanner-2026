@@ -708,7 +708,44 @@ function onScanSuccess(
   );
 }
 
+/**
+ * Apps Script JSONPから
+ * 参加者情報を受信
+ */
+function receptionPreviewCallback(
+  data
+) {
 
+  if (
+    !data ||
+    data.source !==
+      'reception-kiosk-2026' ||
+    data.type !==
+      'preview'
+  ) {
+
+    return;
+  }
+
+
+  clearBridgeTimeout();
+
+
+  const result =
+    data.result || {
+
+      ok: false,
+
+      message:
+        '処理結果を取得できませんでした。'
+
+    };
+
+
+  handlePreviewResult(
+    result
+  );
+}
 
 /**
  * 参加者情報取得
@@ -726,21 +763,73 @@ function requestParticipantPreview(
   );
 
 
-  const url =
+  /*
+   * 前回のJSONP scriptがあれば削除
+   */
+  const oldScript =
+    document.getElementById(
+      'previewJsonpScript'
+    );
+
+
+  if (oldScript) {
+
+    oldScript.remove();
+
+  }
+
+
+  /*
+   * Apps Scriptを
+   * scriptタグとして読み込む
+   */
+  const script =
+    document.createElement(
+      'script'
+    );
+
+
+  script.id =
+    'previewJsonpScript';
+
+
+  script.src =
+
     KIOSK_BRIDGE_URL +
+
     '?bridge=preview' +
+
     '&t=' +
+
     encodeURIComponent(
       token
     ) +
+
+    '&callback=' +
+    'receptionPreviewCallback' +
+
     '&_=' +
     Date.now();
 
 
-  bridgeFrame.src =
-    url;
-}
+  script.onerror =
+    function() {
 
+      clearBridgeTimeout();
+
+
+      showTemporaryMessage(
+        '参加者情報の通信に失敗しました。',
+        3500
+      );
+
+    };
+
+
+  document.body.appendChild(
+    script
+  );
+}
 
 
 /**
