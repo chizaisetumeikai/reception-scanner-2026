@@ -1441,7 +1441,28 @@ async function startScanner() {
       },
 
       {
-        fps: 10
+        fps: 10,
+
+        qrbox:
+          function(
+            viewWidth,
+            viewHeight
+          ) {
+
+            const size =
+              Math.floor(
+                Math.min(
+                  viewWidth,
+                  viewHeight
+                ) * 0.62
+              );
+
+
+            return {
+              width: size,
+              height: size
+            };
+          }
       },
 
       onScanSuccess,
@@ -1477,23 +1498,23 @@ async function startScanner() {
 }
 
 
+
 /**
- * インカメラ／アウトカメラ切替
+ * カメラ画面へ強制復帰
  *
- * 処理途中で止まった場合でも
- * 強制的に状態をリセットして
- * カメラを切り替える。
+ * 処理途中で止まった場合でも、
+ * ユーザー操作でカメラを再起動する。
  */
 async function changeCamera() {
 
   /*
-   * 通信待ちを解除
+   * 通信待ちタイマーを解除
    */
   clearBridgeTimeout();
 
 
   /*
-   * 本人確認画面などを閉じる
+   * 本人確認・結果画面を閉じる
    */
   overlay.style.display =
     'none';
@@ -1515,58 +1536,31 @@ async function changeCamera() {
     '';
 
 
-  /*
-   * 次に使うカメラ
-   */
-  facingMode =
-    facingMode ===
-    'user'
-      ? 'environment'
-      : 'user';
-
-
   busy =
-    true;
+    false;
 
 
   statusElement.textContent =
-    'カメラを切り替えています…';
+    'カメラを再起動しています…';
 
 
   /*
-   * 現在のScannerを終了
+   * いったん現在のScannerを完全終了
    */
   try {
 
     if (scanner) {
 
-      /*
-       * pause中の場合でも
-       * stopできるよう試行
-       */
       try {
 
         await scanner.stop();
 
       } catch (error) {
 
-        /*
-         * pause状態などでstopに失敗したら
-         * 一度resumeしてから再度stop
-         */
-        try {
-
-          scanner.resume();
-
-          await scanner.stop();
-
-        } catch (secondError) {
-
-          console.log(
-            'Scanner stop:',
-            secondError
-          );
-        }
+        console.log(
+          'scanner.stop:',
+          error
+        );
       }
 
 
@@ -1577,7 +1571,7 @@ async function changeCamera() {
       } catch (error) {
 
         console.log(
-          'Scanner clear:',
+          'scanner.clear:',
           error
         );
       }
@@ -1596,29 +1590,20 @@ async function changeCamera() {
 
 
   /*
-   * iPhone / iPadが
-   * カメラを解放する時間を確保
+   * 少し待ってから
+   * 同じカメラを再起動
    */
-  await new Promise(
-    function(resolve) {
+  window.setTimeout(
+    function() {
 
-      window.setTimeout(
-        resolve,
-        300
-      );
-    }
+      startScanner();
+
+    },
+    300
   );
-
-
-  busy =
-    false;
-
-
-  /*
-   * 反対側のカメラを起動
-   */
-  startScanner();
 }
+
+
 
 /**
  * 対応端末では
@@ -1645,12 +1630,9 @@ async function keepScreenAwake() {
      * 非対応端末では
      * 何もしない
      */
-    console.log(
-      'Wake Lock:',
-      error
-    );
   }
 }
+
 
 
 /*
@@ -1659,27 +1641,18 @@ async function keepScreenAwake() {
  * =====================================
  */
 
-/*
- * はい
- */
 yesButton.addEventListener(
   'click',
   confirmReception
 );
 
 
-/*
- * いいえ
- */
 noButton.addEventListener(
   'click',
   cancelReception
 );
 
 
-/*
- * カメラ切替
- */
 document
   .getElementById(
     'cameraButton'
@@ -1690,20 +1663,12 @@ document
   );
 
 
-/*
- * Apps Scriptからの
- * postMessageを受信
- */
 window.addEventListener(
   'message',
   receiveBridgeMessage
 );
 
 
-/*
- * ページを開いたら
- * カメラを自動起動
- */
 window.addEventListener(
   'load',
   function() {
