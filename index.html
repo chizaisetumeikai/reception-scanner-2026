@@ -776,57 +776,6 @@ function requestParticipantPreview(
   );
 }
 
-  /*
-   * Apps Scriptを
-   * scriptタグとして読み込む
-   */
-  const script =
-    document.createElement(
-      'script'
-    );
-
-
-  script.id =
-    'previewJsonpScript';
-
-
-  script.src =
-
-    KIOSK_BRIDGE_URL +
-
-    '?bridge=preview' +
-
-    '&t=' +
-
-    encodeURIComponent(
-      token
-    ) +
-
-    '&callback=' +
-    'receptionPreviewCallback' +
-
-    '&_=' +
-    Date.now();
-
-
-  script.onerror =
-    function() {
-
-      clearBridgeTimeout();
-
-
-      showTemporaryMessage(
-        '参加者情報の通信に失敗しました。',
-        3500
-      );
-
-    };
-
-
-  document.body.appendChild(
-    script
-  );
-}
 
 
 function confirmReception() {
