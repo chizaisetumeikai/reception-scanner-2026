@@ -856,6 +856,22 @@ function receiveBridgeMessage(
 ) {
 
   /*
+   * =====================================
+   * postMessage診断用
+   * =====================================
+   */
+  if (
+    event.data &&
+    event.data.source ===
+      'reception-kiosk-2026'
+  ) {
+
+    statusElement.textContent =
+      'Bridge応答受信：' +
+      event.origin;
+  }
+  
+  /*
    * Apps Script HTML Serviceは
    * googleusercontent.com側から
    * 実行される場合がある。
