@@ -252,15 +252,6 @@
     }
 
 
-    /*
-     * Apps Scriptとの裏側通信用
-     *
-     * 画面には一切表示しない
-     */
-    #bridgeFrame,
-    #bridgeForm {
-      display: none;
-    }
 
   </style>
 
@@ -359,46 +350,7 @@
 </div>
 
 
-
-<!--
-  Apps Scriptとの通信専用iframe
--->
-<iframe
-  id="bridgeFrame"
-  name="kioskBridgeFrame"
-  src="about:blank"
-></iframe>
-
-
-
-<!--
-  受付確定POST専用
--->
-<form
-  id="bridgeForm"
-  method="post"
-  target="kioskBridgeFrame"
->
-
-  <input
-    id="bridgeAction"
-    name="action"
-    type="hidden"
-    value="checkin"
-  >
-
-
-  <input
-    id="bridgeToken"
-    name="t"
-    type="hidden"
-    value=""
-  >
-
-</form>
-
-
-
+  
 <script>
 
 
@@ -500,23 +452,6 @@ const overlayMessage =
     'overlayMessage'
   );
 
-
-const bridgeFrame =
-  document.getElementById(
-    'bridgeFrame'
-  );
-
-
-const bridgeForm =
-  document.getElementById(
-    'bridgeForm'
-  );
-
-
-const bridgeToken =
-  document.getElementById(
-    'bridgeToken'
-  );
 
 
 
