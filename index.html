@@ -1619,3 +1619,105 @@ async function changeCamera() {
    */
   startScanner();
 }
+
+/**
+ * 対応端末では
+ * 画面スリープを防止
+ */
+async function keepScreenAwake() {
+
+  try {
+
+    if (
+      'wakeLock' in navigator
+    ) {
+
+      await navigator
+        .wakeLock
+        .request(
+          'screen'
+        );
+    }
+
+  } catch (error) {
+
+    /*
+     * 非対応端末では
+     * 何もしない
+     */
+    console.log(
+      'Wake Lock:',
+      error
+    );
+  }
+}
+
+
+/*
+ * =====================================
+ * イベント登録
+ * =====================================
+ */
+
+/*
+ * はい
+ */
+yesButton.addEventListener(
+  'click',
+  confirmReception
+);
+
+
+/*
+ * いいえ
+ */
+noButton.addEventListener(
+  'click',
+  cancelReception
+);
+
+
+/*
+ * カメラ切替
+ */
+document
+  .getElementById(
+    'cameraButton'
+  )
+  .addEventListener(
+    'click',
+    changeCamera
+  );
+
+
+/*
+ * Apps Scriptからの
+ * postMessageを受信
+ */
+window.addEventListener(
+  'message',
+  receiveBridgeMessage
+);
+
+
+/*
+ * ページを開いたら
+ * カメラを自動起動
+ */
+window.addEventListener(
+  'load',
+  function() {
+
+    keepScreenAwake();
+
+    startScanner();
+
+  }
+);
+
+
+</script>
+
+</body>
+
+</html>
