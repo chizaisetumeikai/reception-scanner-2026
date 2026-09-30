@@ -1807,6 +1807,46 @@ window.addEventListener(
 
     startScanner();
 
+
+    /*
+     * Apps Script受付コントローラーとの
+     * 接続確認
+     */
+    const params =
+      new URLSearchParams(
+        window.location.search
+      );
+
+
+    const channel =
+      params.get(
+        'channel'
+      ) || '';
+
+
+    if (
+      window.opener &&
+      channel
+    ) {
+
+      window.opener.postMessage(
+
+        {
+          source:
+            'reception-kiosk-2026',
+
+          type:
+            'scanner-ready',
+
+          channel:
+            channel
+        },
+
+        '*'
+
+      );
+    }
+
   }
 );
 
