@@ -1507,7 +1507,6 @@ function clearBridgeTimeout() {
 }
 
 
-
 /**
  * カメラ起動
  */
@@ -1517,13 +1516,59 @@ async function startScanner() {
     'カメラを起動しています…';
 
 
-  scanner =
-    new Html5Qrcode(
-      'reader'
-    );
-
-
   try {
+
+    /*
+     * QRライブラリが
+     * 正常に読み込まれているか確認
+     */
+    if (
+      typeof Html5Qrcode ===
+      'undefined'
+    ) {
+
+      throw new Error(
+        'HTML5_QRCODE_NOT_LOADED'
+      );
+    }
+
+
+    /*
+     * SafariでカメラAPIが
+     * 利用可能か確認
+     */
+    if (
+      !navigator.mediaDevices ||
+      !navigator.mediaDevices.getUserMedia
+    ) {
+
+      throw new Error(
+        'GET_USER_MEDIA_UNAVAILABLE'
+      );
+    }
+
+
+    scanner =
+      new Html5Qrcode(
+        'reader'
+      );
+
+
+    /*
+     * 起動が長時間止まっている場合の
+     * 診断表示
+     */
+    const startupTimer =
+      window.setTimeout(
+        function() {
+
+          statusElement.textContent =
+            'カメラ起動に時間がかかっています。Safariのカメラ権限を確認してください。';
+
+        },
+        8000
+      );
+
 
     await scanner.start(
 
@@ -1532,34 +1577,30 @@ async function startScanner() {
           facingMode
       },
 
-{
-  fps: 10,
+      {
+        fps: 10,
 
-  /*
-   * QR読み取り枠を
-   * カメラ画面の短辺の92%まで広げる
-   */
-  qrbox:
-    function(
-      viewWidth,
-      viewHeight
-    ) {
-
-      const size =
-        Math.floor(
-          Math.min(
+        qrbox:
+          function(
             viewWidth,
             viewHeight
-          ) * 0.62
-        );
+          ) {
+
+            const size =
+              Math.floor(
+                Math.min(
+                  viewWidth,
+                  viewHeight
+                ) * 0.62
+              );
 
 
-      return {
-        width: size,
-        height: size
-      };
-    }
-},
+            return {
+              width: size,
+              height: size
+            };
+          }
+      },
 
       onScanSuccess,
 
@@ -1570,6 +1611,11 @@ async function startScanner() {
          */
       }
 
+    );
+
+
+    window.clearTimeout(
+      startupTimer
     );
 
 
@@ -1588,8 +1634,35 @@ async function startScanner() {
     );
 
 
+    if (
+      error &&
+      error.message ===
+        'HTML5_QRCODE_NOT_LOADED'
+    ) {
+
+      statusElement.textContent =
+        'QR読取ライブラリを読み込めませんでした。';
+
+      return;
+    }
+
+
+    if (
+      error &&
+      error.message ===
+        'GET_USER_MEDIA_UNAVAILABLE'
+    ) {
+
+      statusElement.textContent =
+        'このブラウザではカメラ機能を利用できません。';
+
+      return;
+    }
+
+
     statusElement.textContent =
-      'カメラを起動できません。カメラの許可設定を確認してください。';
+      'カメラを起動できません。Safariのカメラ許可設定を確認してください。';
+
   }
 }
 
