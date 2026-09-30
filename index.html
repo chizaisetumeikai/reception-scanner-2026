@@ -876,17 +876,21 @@ function receiveBridgeMessage(
    * googleusercontent.com側から
    * 実行される場合がある。
    */
-  const allowedOrigin =
-    event.origin ===
-      'https://script.google.com' ||
+const allowedOrigin =
 
-    event.origin ===
-      'https://script.googleusercontent.com' ||
+  event.origin ===
+    'https://chizaisetumeikai.github.io' ||
 
-    /^https:\/\/[^/]+\.googleusercontent\.com$/i
-      .test(
-        event.origin
-      );
+  event.origin ===
+    'https://script.google.com' ||
+
+  event.origin ===
+    'https://script.googleusercontent.com' ||
+
+  /^https:\/\/[^/]+\.googleusercontent\.com$/i
+    .test(
+      event.origin
+    );
 
 
   if (!allowedOrigin) {
